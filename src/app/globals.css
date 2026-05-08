@@ -1,22 +1,105 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Warm Mediterranean palette + design tokens.
+ *
+ * In Tailwind v4, every entry in @theme becomes both a `--color-<name>` CSS
+ * variable AND a Tailwind utility class (`bg-<name>`, `text-<name>`, etc.).
+ *
+ * shadcn/ui primitives expect a set of semantic tokens (bg-primary,
+ * bg-card, bg-muted, bg-accent, text-card-foreground, ring-ring, etc.).
+ * We map those names onto the Warm Mediterranean palette so the primitives
+ * pick up the right colors out of the box.
+ *
+ * One naming collision worth flagging: shadcn's `accent` token means
+ * "hover surface / muted state", NOT a saturated highlight color. Our brand
+ * has an olive highlight that we preserve under a separate name --
+ * `--color-olive` (#7B8754) -- so it is still reachable via `bg-olive` /
+ * `text-olive`. The `accent` token below is reserved for shadcn semantics.
+ */
 @theme {
+  /* Warm Mediterranean base */
   --color-bg: #FAF5EC;
   --color-surface: #FFFEF9;
   --color-surface-2: #F4EBD9;
   --color-primary: #C77D49;
   --color-primary-dark: #A05A2C;
-  --color-accent: #7B8754;
+  --color-olive: #7B8754;
   --color-text: #3D2914;
   --color-text-muted: #8B6F5A;
   --color-border: #E8DCC8;
   --color-success: #6B8E4E;
   --color-danger: #B85B4A;
+
+  /* shadcn semantic bridge -- redirected to Warm Mediterranean */
+  --color-background: #FAF5EC;            /* = --color-bg */
+  --color-foreground: #3D2914;            /* = --color-text */
+  --color-card: #FFFEF9;                  /* = --color-surface */
+  --color-card-foreground: #3D2914;       /* = --color-text */
+  --color-popover: #FFFEF9;               /* = --color-surface */
+  --color-popover-foreground: #3D2914;    /* = --color-text */
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F4EBD9;             /* = --color-surface-2 */
+  --color-secondary-foreground: #3D2914;  /* = --color-text */
+  --color-muted: #F4EBD9;                 /* = --color-surface-2 */
+  --color-muted-foreground: #8B6F5A;      /* = --color-text-muted */
+  --color-accent: #F4EBD9;                /* shadcn "accent" = hover surface */
+  --color-accent-foreground: #3D2914;     /* = --color-text */
+  --color-destructive: #B85B4A;           /* = --color-danger */
+  --color-destructive-foreground: #FFFFFF;
+  --color-input: #E8DCC8;                 /* = --color-border */
+  --color-ring: #C77D49;                  /* = --color-primary */
+
+  /* Sidebar tokens (used by shadcn sidebar primitives, included for
+     forward compatibility) */
+  --color-sidebar: #FFFEF9;
+  --color-sidebar-foreground: #3D2914;
+  --color-sidebar-primary: #C77D49;
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent: #F4EBD9;
+  --color-sidebar-accent-foreground: #3D2914;
+  --color-sidebar-border: #E8DCC8;
+  --color-sidebar-ring: #C77D49;
+
+  /* Radii + shadows + fonts */
   --radius-card: 14px;
   --radius-btn: 12px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --shadow-card: 0 4px 14px rgba(61, 41, 20, 0.06);
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, serif;
+}
+
+/*
+ * Dark-mode token overrides. Not shipped in v1; values are placeholders that
+ * keep the .dark class valid CSS for future use.
+ */
+.dark {
+  --color-background: #2A1C0E;
+  --color-foreground: #FAF5EC;
+  --color-card: #3D2914;
+  --color-card-foreground: #FAF5EC;
+  --color-popover: #3D2914;
+  --color-popover-foreground: #FAF5EC;
+  --color-primary: #C77D49;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #4A3422;
+  --color-secondary-foreground: #FAF5EC;
+  --color-muted: #4A3422;
+  --color-muted-foreground: #8B6F5A;
+  --color-accent: #4A3422;
+  --color-accent-foreground: #FAF5EC;
+  --color-destructive: #B85B4A;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: rgba(232, 220, 200, 0.15);
+  --color-input: rgba(232, 220, 200, 0.2);
+  --color-ring: #C77D49;
 }
 
 @layer base {
@@ -32,5 +115,11 @@
   h3 {
     font-family: var(--font-serif);
     color: var(--color-text);
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
   }
 }
