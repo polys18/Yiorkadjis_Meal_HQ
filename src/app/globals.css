@@ -33,8 +33,4 @@
     font-family: var(--font-serif);
     color: var(--color-text);
   }
-
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
-  }
 }
