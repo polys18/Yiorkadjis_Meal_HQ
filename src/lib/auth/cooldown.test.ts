@@ -40,4 +40,17 @@ describe("PIN cooldown", () => {
     for (let i = 0; i < 4; i++) await recordAttempt(userId, false);
     expect(await isOnCooldown(userId)).toBe(false);
   });
+
+  it("re-trips cooldown after 5 failures following a success", async () => {
+    for (let i = 0; i < 5; i++) await recordAttempt(userId, false);
+    await recordAttempt(userId, true);
+    for (let i = 0; i < 5; i++) await recordAttempt(userId, false);
+    expect(await isOnCooldown(userId)).toBe(true);
+  });
+
+  it("secondsUntilUnlock returns 0 after a successful login clears failures", async () => {
+    for (let i = 0; i < 5; i++) await recordAttempt(userId, false);
+    await recordAttempt(userId, true);
+    expect(await secondsUntilUnlock(userId)).toBe(0);
+  });
 });
