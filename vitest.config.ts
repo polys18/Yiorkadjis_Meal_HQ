@@ -8,6 +8,7 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     sequence: { concurrent: false },
     pool: "forks",
+    fileParallelism: false,
   },
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
 });
