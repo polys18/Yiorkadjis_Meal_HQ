@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: meal_hq_pg
+    environment:
+      POSTGRES_USER: meal_hq
+      POSTGRES_PASSWORD: meal_hq
+      POSTGRES_DB: meal_hq
+    ports:
+      - "5433:5432"
+    volumes:
+      - meal_hq_pgdata:/var/lib/postgresql/data
+volumes:
+  meal_hq_pgdata:
