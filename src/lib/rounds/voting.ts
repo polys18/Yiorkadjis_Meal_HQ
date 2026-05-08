@@ -1,6 +1,7 @@
 import { db } from "@/db/client";
 import { rounds, mealOptions, votes, auditLog } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
+import { publishRoundEvent } from "@/lib/events/pubsub";
 
 export type VoteErrorCode = "ROUND_CLOSED" | "ROUND_NOT_FOUND" | "OPTION_NOT_IN_ROUND";
 
@@ -16,7 +17,7 @@ export async function castVote(params: {
   roundId: string;
   mealOptionId: string;
 }) {
-  return await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     const [round] = await tx.select().from(rounds).where(eq(rounds.id, params.roundId)).limit(1);
     if (!round) throw new VoteError("ROUND_NOT_FOUND", "Round not found");
     if (round.status !== "open") throw new VoteError("ROUND_CLOSED", "Round is closed");
@@ -59,4 +60,5 @@ export async function castVote(params: {
       });
     }
   });
+  publishRoundEvent({ type: "vote-changed", roundId: params.roundId });
 }

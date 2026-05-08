@@ -3,6 +3,7 @@ import { rounds, mealOptions, auditLog } from "@/db/schema";
 import { and, eq, max, ne } from "drizzle-orm";
 import type { MealType } from "@/lib/constants";
 import { RoundError } from "./errors";
+import { publishRoundEvent } from "@/lib/events/pubsub";
 
 export async function createRound(params: {
   userId: string;
@@ -69,7 +70,7 @@ export async function closeRound(params: {
   roundId: string;
   cookingDecision: string[];
 }) {
-  return await db.transaction(async (tx) => {
+  const r = await db.transaction(async (tx) => {
     const [r] = await tx
       .update(rounds)
       .set({
@@ -88,10 +89,12 @@ export async function closeRound(params: {
     });
     return r;
   });
+  publishRoundEvent({ type: "round-closed", roundId: r.id });
+  return r;
 }
 
 export async function reopenRound(params: { userId: string; roundId: string }) {
-  return await db.transaction(async (tx) => {
+  const r = await db.transaction(async (tx) => {
     const [r] = await tx
       .update(rounds)
       .set({ status: "open", closedAt: null, cookingDecision: null })
@@ -105,6 +108,8 @@ export async function reopenRound(params: { userId: string; roundId: string }) {
     });
     return r;
   });
+  publishRoundEvent({ type: "round-reopened", roundId: r.id });
+  return r;
 }
 
 export async function deleteRound(params: { userId: string; roundId: string }) {
@@ -130,7 +135,7 @@ export async function editOptions(params: {
   add?: { name: string; note?: string }[];
   remove?: string[];
 }) {
-  return await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     if (params.remove?.length) {
       for (const id of params.remove) {
         await tx
@@ -160,4 +165,5 @@ export async function editOptions(params: {
       payload: { added: params.add?.length ?? 0, removed: params.remove?.length ?? 0 },
     });
   });
+  publishRoundEvent({ type: "options-edited", roundId: params.roundId });
 }
