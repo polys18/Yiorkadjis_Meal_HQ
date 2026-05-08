@@ -2,6 +2,7 @@ import { db } from "@/db/client";
 import { rounds, mealOptions, auditLog } from "@/db/schema";
 import { and, eq, max, ne } from "drizzle-orm";
 import type { MealType } from "@/lib/constants";
+import { RoundError } from "./errors";
 
 export async function createRound(params: {
   userId: string;
@@ -21,37 +22,46 @@ export async function createRound(params: {
     )
     .limit(1);
   if (existing) {
-    throw new Error("Round already exists for this slot");
+    throw new RoundError("DUPLICATE_SLOT", "Round already exists for this slot");
   }
 
-  return await db.transaction(async (tx) => {
-    const [r] = await tx
-      .insert(rounds)
-      .values({
-        date: params.date,
-        mealType: params.mealType,
-        status: "open",
-        openedBy: params.userId,
-      })
-      .returning();
-    if (params.options.length > 0) {
-      await tx.insert(mealOptions).values(
-        params.options.map((o, i) => ({
-          roundId: r.id,
-          name: o.name.trim(),
-          note: o.note?.trim() || null,
-          position: i,
-        }))
-      );
-    }
-    await tx.insert(auditLog).values({
-      userId: params.userId,
-      action: "create_round",
-      roundId: r.id,
-      payload: { optionCount: params.options.length },
+  try {
+    return await db.transaction(async (tx) => {
+      const [r] = await tx
+        .insert(rounds)
+        .values({
+          date: params.date,
+          mealType: params.mealType,
+          status: "open",
+          openedBy: params.userId,
+        })
+        .returning();
+      if (params.options.length > 0) {
+        await tx.insert(mealOptions).values(
+          params.options.map((o, i) => ({
+            roundId: r.id,
+            name: o.name.trim(),
+            note: o.note?.trim() || null,
+            position: i,
+          }))
+        );
+      }
+      await tx.insert(auditLog).values({
+        userId: params.userId,
+        action: "create_round",
+        roundId: r.id,
+        payload: { optionCount: params.options.length },
+      });
+      return r;
     });
-    return r;
-  });
+  } catch (e) {
+    // postgres unique-violation code per spec is "23505"
+    const pgErr = e as { code?: string };
+    if (pgErr.code === "23505") {
+      throw new RoundError("DUPLICATE_SLOT", "Round already exists for this slot");
+    }
+    throw e;
+  }
 }
 
 export async function closeRound(params: {
@@ -69,7 +79,7 @@ export async function closeRound(params: {
       })
       .where(and(eq(rounds.id, params.roundId), eq(rounds.status, "open")))
       .returning();
-    if (!r) throw new Error("Round not open");
+    if (!r) throw new RoundError("NOT_OPEN", "Round is not open");
     await tx.insert(auditLog).values({
       userId: params.userId,
       action: "close_round",
@@ -87,7 +97,7 @@ export async function reopenRound(params: { userId: string; roundId: string }) {
       .set({ status: "open", closedAt: null, cookingDecision: null })
       .where(and(eq(rounds.id, params.roundId), eq(rounds.status, "closed")))
       .returning();
-    if (!r) throw new Error("Round not closed");
+    if (!r) throw new RoundError("NOT_CLOSED", "Round is not closed");
     await tx.insert(auditLog).values({
       userId: params.userId,
       action: "reopen_round",
@@ -104,7 +114,7 @@ export async function deleteRound(params: { userId: string; roundId: string }) {
       .set({ status: "deleted" })
       .where(and(eq(rounds.id, params.roundId), ne(rounds.status, "deleted")))
       .returning();
-    if (!r) throw new Error("Round already deleted");
+    if (!r) throw new RoundError("ALREADY_DELETED", "Round already deleted");
     await tx.insert(auditLog).values({
       userId: params.userId,
       action: "delete_round",

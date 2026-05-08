@@ -55,6 +55,20 @@ describe("round mutations", () => {
     ).rejects.toThrow(/already exists/i);
   });
 
+  it("createRound surfaces DUPLICATE_SLOT even on race condition", async () => {
+    const eleni = await makeUser({ role: "mom", name: "Eleni" });
+    // Pre-create directly via factory to skip the pre-SELECT guard
+    await makeRound({ openedBy: eleni.id, date: "2026-05-08", mealType: "dinner" });
+    await expect(
+      createRound({
+        userId: eleni.id,
+        mealType: "dinner",
+        date: "2026-05-08",
+        options: [{ name: "Other" }],
+      })
+    ).rejects.toMatchObject({ code: "DUPLICATE_SLOT" });
+  });
+
   it("closeRound sets status, closedAt, and cookingDecision", async () => {
     const eleni = await makeUser({ role: "mom", name: "Eleni" });
     const round = await makeRound({ openedBy: eleni.id, date: "2026-05-08" });
