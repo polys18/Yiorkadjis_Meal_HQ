@@ -19,8 +19,9 @@ async function main() {
   const rounds = parseInt(process.env.BCRYPT_ROUNDS || "12", 10);
   const placeholderHash = await bcrypt.hash("0000", rounds);
 
+  let inserted = 0;
   for (const member of FAMILY) {
-    await db
+    const result = await db
       .insert(users)
       .values({
         name: member.name,
@@ -28,10 +29,16 @@ async function main() {
         color: member.color,
         pinHash: placeholderHash,
       })
-      .onConflictDoNothing({ target: users.name });
+      .onConflictDoNothing({ target: users.name })
+      .returning({ id: users.id });
+    inserted += result.length;
   }
   await client.end();
-  console.log(`Seeded ${FAMILY.length} family members (PIN = 0000 for all).`);
+  if (inserted === 0) {
+    console.log("Seed complete. All family members already exist.");
+  } else {
+    console.log(`Seed complete. Inserted ${inserted} new family member(s) with default PIN 0000.`);
+  }
 }
 main().catch((e) => {
   console.error(e);
