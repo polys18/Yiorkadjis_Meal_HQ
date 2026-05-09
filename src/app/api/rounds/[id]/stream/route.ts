@@ -18,25 +18,45 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      const send = (data: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      let closed = false;
+
+      const safeEnqueue = (chunk: Uint8Array) => {
+        if (closed) return;
+        try {
+          controller.enqueue(chunk);
+        } catch {
+          onAbort();
+        }
       };
-      send({ type: "hello", roundId: id });
+
+      const send = (data: unknown) => {
+        safeEnqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
 
       const heartbeat = setInterval(() => {
-        controller.enqueue(encoder.encode(`: ping\n\n`));
+        safeEnqueue(encoder.encode(`: ping\n\n`));
       }, 20_000);
 
       const unsub = subscribeToRound(id, (ev) => send(ev));
 
-      const onAbort = () => {
+      function onAbort() {
+        if (closed) return;
+        closed = true;
         clearInterval(heartbeat);
         unsub();
         try {
           controller.close();
         } catch {}
-      };
-      req.signal.addEventListener("abort", onAbort);
+      }
+
+      // Send initial event after handlers are set up so any failure routes through safeEnqueue
+      send({ type: "hello", roundId: id });
+
+      if (req.signal.aborted) {
+        onAbort();
+        return;
+      }
+      req.signal.addEventListener("abort", onAbort, { once: true });
     },
   });
 
