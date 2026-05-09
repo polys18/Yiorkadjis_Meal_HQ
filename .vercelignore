@@ -1,0 +1,13 @@
+.superpowers/
+docs/
+e2e/
+docker-compose.yml
+playwright.config.ts
+playwright-report/
+test-results/
+playwright/
+src/tests/
+.env.test
+.env.local
+.next-e2e/
+*.test.ts
