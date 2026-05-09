@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "e2e:db:setup": "docker exec meal_hq_pg psql -U meal_hq -d postgres -c 'CREATE DATABASE meal_hq_e2e;' || true; docker exec -i meal_hq_pg psql -U meal_hq -d meal_hq_e2e < src/db/migrations/0000_thick_king_bedlam.sql > /dev/null 2>&1 || true",
+    "e2e:db:setup": "docker exec meal_hq_pg psql -U meal_hq -d postgres -c 'CREATE DATABASE meal_hq_e2e;' 2>/dev/null || true; DATABASE_URL=postgres://meal_hq:meal_hq@localhost:5433/meal_hq_e2e pnpm db:migrate",
     "e2e": "pnpm e2e:db:setup && playwright test"
   },
   "dependencies": {

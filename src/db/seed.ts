@@ -6,7 +6,7 @@ import { users } from "./schema";
 import { FAMILY } from "@/lib/constants";
 
 config({ path: ".env" });
-config({ path: ".env.local", override: true });
+config({ path: ".env.local" });
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
